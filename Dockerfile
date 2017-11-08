@@ -4,6 +4,9 @@ FROM consul
 ENV CONTAINERPILOT_VERSION 2.6.0
 ENV CONTAINERPILOT file:///etc/containerpilot.json
 
+# Add INOC private repository
+ENV PRIVATE_REPO http://repo0.inoc.com/public/alpine/v3.6/inoc/
+
 RUN export CONTAINERPILOT_CHECKSUM=c1bcd137fadd26ca2998eec192d04c08f62beb1f \
     && export archive=containerpilot-${CONTAINERPILOT_VERSION}.tar.gz \
     && curl -Lso /tmp/${archive} \
@@ -11,7 +14,8 @@ RUN export CONTAINERPILOT_CHECKSUM=c1bcd137fadd26ca2998eec192d04c08f62beb1f \
     && echo "${CONTAINERPILOT_CHECKSUM}  /tmp/${archive}" | sha1sum -c \
     && tar zxf /tmp/${archive} -C /usr/local/bin \
     && rm /tmp/${archive} \
-    && apk add --no-cache bash curl bind-tools grepcidr \
+    && apk add --no-cache bash curl bind-tools \
+    && apk add grepcidr --no-cache --repository ${PRIVATE_REPO} --allow-untrusted
 
 # configuration files and bootstrap scripts
 COPY etc/containerpilot.json etc/
