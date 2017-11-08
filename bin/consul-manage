@@ -1,10 +1,10 @@
 #!/bin/bash
 set -eo pipefail
 
-# Update the -advertise address based on the interface saved on the enviornment CONSUL_BIND_INTERFACE (the one that base image consul uses)
+# Update the -advertise address based on the interface saved on the environment CONSUL_BIND_CIDR (the one that base image consul uses)
 
 preStart() {
-    _log "Consul advertise $(ip -o -4 addr list $CONSUL_BIND_INTERFACE | head -n1 | awk '{print $4}' | cut -d/ -f1) address"
+    _log "Consul advertise $(ip -o -4 addr list | grepcidr $CONSUL_BIND_CIDR | head -n1 | awk '{print $4}' | cut -d/ -f1) address"
 }
 
 preStop() {
@@ -25,7 +25,7 @@ preStop() {
 
 health() {
     N_PEERS=$(consul info | awk '/num_peers/{print$3}')
-    MYIP=$(ip -o -4 addr list $CONSUL_BIND_INTERFACE | head -n1 | awk '{print $4}' | cut -d/ -f1)
+    MYIP=$(ip -o -4 addr list | grepcidr $CONSUL_BIND_CIDR | head -n1 | awk '{print $4}' | cut -d/ -f1)
 
     if [ "$N_PEERS" == 0 ]; then
         IPLIST=$(dig A tasks.${CONSUL} +short)
