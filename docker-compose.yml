@@ -9,20 +9,21 @@ services:
       - "8700:8700"
       - "8500:8500"
     networks:
-      consul-net:
+      consul-backend:
         aliases:
           - server.consul.swarm.container  
-        
+      consul-frontend:
+   
     environment:
         - 'CONSUL_LOCAL_CONFIG={"skip_leave_on_interrupt": true}'
      #   - CONSUL_BIND_CIDR=10.250.250.0/24
         - CONSUL=consul
         - CONSUL_CHECK_LEADER=true
    #     - CONSUL_BIND_ADDR="{{ GetPrivateInterfaces | include \"network\" \"10.250.250.0/24\" | unique \"name\" | attr \"address\" }}"
-    command: "consul agent -server -bootstrap-expect=3 -ui -client=0.0.0.0 -retry-interval=5s -disable-host-node-id -config-file=/run/secrets/consul_server_config.json"    
+    command: "consul agent -server -bootstrap-expect=3 -ui -client=0.0.0.0 -retry-interval=5s -disable-host-node-id -config-file=/run/secrets/consul_server_config.json -config-file=/run/secrets/server_secrets_config.json"    
     deploy:
       mode: replicated
-      replicas: 3
+      replicas: 5
       resources:
         reservations:
           memory: 128M
@@ -37,24 +38,27 @@ services:
         failure_action: pause
 
     secrets:
-      - consul_server_config.json
+      - source: consul_server_config.json-1
+        target: consul_server_config.json
+      - source: server_secrets_config.json-1
+        target: server_secrets_config.json
       - consul_ca_file.cer
       - consul_cert_file.cer
       - consul_key_file.key
 
 networks:
-  consul-net:
-    driver: overlay
-    driver_opts:
-      encrypted: ""
-    ipam:
-      driver: default
-      config:
-        - subnet: 10.250.250.0/24 # If changed, change the server config also.
-
+  # Attachable, encrypted overlay network for consul server-to-server talk.
+  # Needs to be attachable so that we can have multiple swarms/stacks on same network.
+  consul-backend:
+    external: true
+  # Attachable overlay network for client to consul requests.
+  consul-frontend:
+    external: true
 secrets:
-  consul_server_config.json:
+  consul_server_config.json-1:
     file: ./data/server_config.json
+  server_secrets_config.json-1:
+    file: ./data/server_secrets_config.json
   consul_ca_file.cer:
     file: ./data/certificates/consul-root.cer
   consul_cert_file.cer:

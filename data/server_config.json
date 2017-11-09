@@ -41,5 +41,8 @@
     "https" : 8700
   },
   "server" : true,
-  "ui" : true
+  "ui" : true,
+  "performance": {
+    "raft_multiplier": 1
+  }
 }
